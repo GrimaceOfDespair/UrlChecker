@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -32,6 +33,9 @@ namespace UrlChecker
       request.AllowAutoRedirect = true;
       request.MaximumAutomaticRedirections = 4;
 
+      var timer = new Stopwatch();
+      timer.Start();
+
       HttpStatusCode statusCode;
       Uri responseUri;
       using (var response = (HttpWebResponse)request.GetResponse(false))
@@ -40,13 +44,17 @@ namespace UrlChecker
         responseUri = response.ResponseUri;
       }
 
+      timer.Stop();
+
+      var responseInfo = url + "\t" + statusCode + "\t" + responseUri + "\t" + timer.ElapsedMilliseconds;
+
       if (statusCode == HttpStatusCode.OK)
       {
-        Console.WriteLine(url + "\t" + statusCode + "\t" + responseUri);
+        Console.WriteLine(responseInfo);
       }
       else
       {
-        Console.Error.WriteLine(url + "\t" + statusCode + "\t" + responseUri);
+        Console.Error.WriteLine(responseInfo);
       }
     }
   }

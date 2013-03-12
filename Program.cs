@@ -18,7 +18,21 @@ namespace UrlChecker
         try
         {
           //Console.WriteLine("Checking " + line);
-          CheckUrl(Regex.Replace(line, @"\t(.*)$", ""));
+          var command = Regex.Replace(line, @"\t(.*)$", "");
+
+          var profilingMatch = Regex.Match(command, @"(?<times>\d+)\s(?<url>.+)*");
+          int times;
+          if (profilingMatch.Success && int.TryParse(profilingMatch.Groups["times"].Value, out times))
+          {
+            var url = profilingMatch.Groups["url"].Value;
+            var elapsedMilliseconds = Profile(times, () => CheckUrl(url));
+
+            Console.WriteLine(url + "\tAVG\t" + url + "\t" + Math.Floor(elapsedMilliseconds / (float)times));
+          }
+          else
+          {
+            CheckUrl(command);
+          }
         }
         catch (Exception e)
         {
@@ -27,7 +41,17 @@ namespace UrlChecker
       }
     }
 
-    private static void CheckUrl(string url)
+    private static long Profile(int times, Func<long> action)
+    {
+      long totalTime = 0;
+      for (var time = 0; time < times; time++)
+      {
+        totalTime += action();
+      }
+      return totalTime;
+    }
+
+    private static long CheckUrl(string url)
     {
       var request = (HttpWebRequest)WebRequest.Create(url);
       request.AllowAutoRedirect = true;
@@ -56,6 +80,8 @@ namespace UrlChecker
       {
         Console.Error.WriteLine(responseInfo);
       }
+
+      return timer.ElapsedMilliseconds;
     }
   }
 }

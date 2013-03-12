@@ -20,12 +20,18 @@ namespace UrlChecker
           //Console.WriteLine("Checking " + line);
           var command = Regex.Replace(line, @"\t(.*)$", "");
 
-          var profilingMatch = Regex.Match(command, @"(?<times>\d+)\s(?<url>.+)*");
+          // Get number of times to request url for profiling
+          var profilingMatch = Regex.Match(command, @"((?<warmup>\d+)\s+)?(?<times>\d+)\s+(?<url>.+)*");
           int times;
           if (profilingMatch.Success && int.TryParse(profilingMatch.Groups["times"].Value, out times))
           {
+            // Get number of times to request url for warmup
+            int warmup;
+            int.TryParse(profilingMatch.Groups["warmup"].Value, out warmup);
+
+            // Get url to request
             var url = profilingMatch.Groups["url"].Value;
-            var elapsedMilliseconds = Profile(times, () => CheckUrl(url));
+            var elapsedMilliseconds = Profile(warmup, times, () => CheckUrl(url));
 
             Console.WriteLine(url + "\tAVG\t" + url + "\t" + Math.Floor(elapsedMilliseconds / (float)times));
           }
@@ -41,12 +47,17 @@ namespace UrlChecker
       }
     }
 
-    private static long Profile(int times, Func<long> action)
+    private static long Profile(int warmup, int times, Func<long> action)
     {
       long totalTime = 0;
-      for (var time = 0; time < times; time++)
+      for (var time = -warmup; time < times; time++)
       {
-        totalTime += action();
+        var elapsedMilleSeconds = action();
+
+        if (time >= 0)
+        {
+          totalTime += elapsedMilleSeconds;
+        }
       }
       return totalTime;
     }
